@@ -18,19 +18,32 @@ cp wp-live-reload.php /path/to/your/site/wp-content/mu-plugins/
 
 That's it — MU plugins are loaded automatically. No activation required.
 
-### 2. Enable
+### 2. Configure
 
-The plugin activates only when `WP_DEBUG` is `true`. Make sure your `wp-config.php` has:
+Add the following to your `wp-config.php` **above** the line `/* That's all, stop editing! */`:
 
 ```php
+// Enable the plugin (requires WP_DEBUG to be true).
 define( 'WP_DEBUG', true );
+
+// Directories to watch for file changes.
+// Always use absolute paths — use __DIR__ to build them.
+define( 'WPLR_PATHS', [
+    __DIR__ . '/wp-content/plugins/my-plugin',
+    __DIR__ . '/wp-content/themes/my-theme',
+] );
+
+// File extensions to watch (default: js, mjs, css, json).
+define( 'WPLR_EXTENSIONS', [ 'js', 'css', 'json', 'php' ] );
 ```
 
 > **⚠️ Never enable `WP_DEBUG` in production.** This plugin is for local development only.
 
+> **Note:** If you skip `WPLR_PATHS`, the plugin watches your **active theme** by default. But if you're developing a plugin, you must define `WPLR_PATHS` explicitly — otherwise your plugin changes won't trigger a reload.
+
 ### 3. Verify
 
-Open your site in the browser, open DevTools → Console, and edit any file in your active theme. Within ~2 seconds you should see:
+Open your site in the browser, open DevTools → Console, and edit any file in a watched directory. Within ~2 seconds you should see:
 
 ```
 [WP Live Reload] change detected: /path/to/changed-file.css
@@ -40,9 +53,9 @@ Open your site in the browser, open DevTools → Console, and edit any file in y
 
 ---
 
-## Configuration
+## Configuration Reference
 
-All settings are optional. Define them in `wp-config.php` **above** the line `/* That's all, stop editing! */`.
+All settings are defined in `wp-config.php` **above** the line `/* That's all, stop editing! */`.
 
 ### `WPLR_PATHS` — Directories to watch
 
@@ -51,6 +64,7 @@ All settings are optional. Define them in `wp-config.php` **above** the line `/*
 ```php
 define( 'WPLR_PATHS', [
     __DIR__ . '/wp-content/plugins/my-plugin',
+    __DIR__ . '/wp-content/plugins/my-other-plugin',
     __DIR__ . '/wp-content/themes/my-theme',
 ] );
 ```
@@ -169,7 +183,8 @@ The reload script is injected into:
 1. **Check `WP_DEBUG`** — Is it `true` in `wp-config.php`?
 2. **Check paths** — Open `/?wplr_poll=1` in your browser. If the response is `{"sig":"0-0-0","file":""}`, no files are being found. Verify your `WPLR_PATHS` point to existing directories with absolute paths.
 3. **Check extensions** — If you're editing `.php` files but `WPLR_EXTENSIONS` only includes `['js', 'css']`, those changes won't be detected.
-4. **Check the console** — Open DevTools → Console. If the `<script id="wplr-client">` tag isn't present in the page source, the hook isn't running (e.g., your theme might not call `wp_footer()`).
+4. **Check for stray output** — Visit `/?wplr_poll=1` directly in the browser. If you see any text before the JSON (e.g. PHP warnings, debug echos), that corrupts the response and silently breaks the reload. Fix the source of the output.
+5. **Check the console** — Open DevTools → Console. If the `<script id="wplr-client">` tag isn't present in the page source, the hook isn't running (e.g., your theme might not call `wp_footer()`).
 
 ### Reloads happen during typing in the block editor
 
